@@ -44,9 +44,11 @@ jobs:
           python monitor.py
 
 
-      - name: Save debug screenshot
+      - name: Save debug files
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: viagogo-debug
-          path: viagogo-debug.png
+          path: |
+            viagogo-debug.png
+            viagogo-page.html
