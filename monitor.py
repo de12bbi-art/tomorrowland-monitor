@@ -107,6 +107,7 @@ with sync_playwright() as p:
 
 
 print("Cerco prezzi...")
+send_telegram("🚀 Test Tomorrowland monitor")
 
 
 prices = []
