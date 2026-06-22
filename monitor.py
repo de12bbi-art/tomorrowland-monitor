@@ -24,10 +24,15 @@ def send_telegram(message):
 
 with sync_playwright() as p:
 
-    browser = p.chromium.launch(headless=True)
+    browser = p.chromium.launch(
+        headless=True
+    )
 
     page = browser.new_page(
-        viewport={"width": 1280, "height": 900}
+        viewport={
+            "width": 1280,
+            "height": 900
+        }
     )
 
     print("Apro Viagogo...")
@@ -41,41 +46,58 @@ with sync_playwright() as p:
     page.wait_for_timeout(8000)
 
 
-    # Cookie / popup
+    # Cookie popup
     for selector in [
         "button:has-text('Accetta')",
         "button:has-text('Accetto')",
-        "button:has-text('OK')",
         "button:has-text('Accept')",
+        "button:has-text('OK')",
         "[aria-label='Close']"
     ]:
         try:
-            page.locator(selector).click(timeout=3000)
-            print("Chiuso popup:", selector)
+            page.locator(selector).first.click(timeout=3000)
+            print("Chiuso:", selector)
             break
         except:
             pass
 
 
-    # Se chiede quantità, prova a scegliere 1
+    page.wait_for_timeout(3000)
+
+
+    # Popup "Quanti biglietti"
+    print("Cerco selezione quantità...")
+
+    clicked = False
+
     for selector in [
-        "text=1 biglietto",
-        "text=1 biglietti",
-        "text=1 Ticket",
-        "text=1 ticket"
+        "button:has-text('1')",
+        "[role='button']:has-text('1')",
+        "text=1"
     ]:
         try:
-            page.locator(selector).click(timeout=5000)
-            print("Scelta quantità:", selector)
+            page.locator(selector).first.click(timeout=5000)
+            print("Scelto 1 biglietto:", selector)
+            clicked = True
             break
         except:
             pass
+
+
+    if not clicked:
+        print("Non ho trovato il bottone 1, provo coordinate...")
+
+        try:
+            page.mouse.click(640, 450)
+            print("Click coordinato eseguito")
+        except Exception as e:
+            print("Click coordinato fallito:", e)
 
 
     page.wait_for_timeout(10000)
 
 
-    # salva screenshot per debug
+    # screenshot debug
     page.screenshot(
         path="viagogo-debug.png",
         full_page=True
@@ -84,12 +106,15 @@ with sync_playwright() as p:
 
     text = page.locator("body").inner_text()
 
+
     browser.close()
+
 
 
 print("Cerco prezzi...")
 
 prices = []
+
 
 patterns = [
     r"€\s*([0-9]+(?:[.,][0-9]{2})?)",
@@ -98,10 +123,11 @@ patterns = [
 
 
 for pattern in patterns:
-    matches = re.findall(pattern, text)
 
-    for m in matches:
+    for m in re.findall(pattern, text):
+
         try:
+
             value = float(
                 m.replace(".", "")
                  .replace(",", ".")
@@ -114,28 +140,35 @@ for pattern in patterns:
             pass
 
 
+
 if not prices:
+
     raise Exception(
-        "Nessun prezzo trovato. Guarda lo screenshot viagogo-debug."
+        "Nessun prezzo trovato. Controlla viagogo-debug.png"
     )
+
 
 
 lowest = min(prices)
 
-print(f"Prezzo minimo trovato: {lowest} €")
+print(
+    f"Prezzo minimo trovato: {lowest} €"
+)
+
 
 
 if lowest <= THRESHOLD:
 
     send_telegram(
         f"🔥 Tomorrowland Weekend 1\n\n"
-        f"🎟 1 biglietto trovato\n"
+        f"🎟 1 biglietto\n"
         f"💰 Prezzo minimo: {lowest:.2f} €\n"
         f"🎯 Soglia: {THRESHOLD} €\n\n"
         f"{URL}"
     )
 
 else:
+
     print(
-        f"Nessun alert. Minimo {lowest} € > {THRESHOLD} €"
+        f"Nessun alert: {lowest} € > {THRESHOLD} €"
     )
