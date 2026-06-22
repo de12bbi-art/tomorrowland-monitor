@@ -56,7 +56,7 @@ with sync_playwright() as p:
     ]:
         try:
             page.locator(selector).first.click(timeout=3000)
-            print("Chiuso:", selector)
+            print("Chiuso popup:", selector)
             break
         except:
             pass
@@ -65,8 +65,8 @@ with sync_playwright() as p:
     page.wait_for_timeout(3000)
 
 
-    # Popup "Quanti biglietti"
-    print("Cerco selezione quantità...")
+    # Popup quantità biglietti
+    print("Cerco quantità...")
 
     clicked = False
 
@@ -77,7 +77,7 @@ with sync_playwright() as p:
     ]:
         try:
             page.locator(selector).first.click(timeout=5000)
-            print("Scelto 1 biglietto:", selector)
+            print("Selezionato 1 biglietto:", selector)
             clicked = True
             break
         except:
@@ -85,26 +85,36 @@ with sync_playwright() as p:
 
 
     if not clicked:
-        print("Non ho trovato il bottone 1, provo coordinate...")
-
-        try:
-            page.mouse.click(640, 450)
-            print("Click coordinato eseguito")
-        except Exception as e:
-            print("Click coordinato fallito:", e)
+        print("Click quantità non trovato")
 
 
-    page.wait_for_timeout(10000)
+    # Attendo caricamento listing
+    page.wait_for_timeout(15000)
 
 
-    # screenshot debug
+    # Screenshot
     page.screenshot(
         path="viagogo-debug.png",
         full_page=True
     )
 
 
+    # Testo pagina
     text = page.locator("body").inner_text()
+
+    print("===== TESTO PAGINA =====")
+    print(text[:5000])
+
+
+    # Salvo HTML completo
+    html = page.content()
+
+    with open(
+        "viagogo-page.html",
+        "w",
+        encoding="utf-8"
+    ) as f:
+        f.write(html)
 
 
     browser.close()
@@ -118,7 +128,8 @@ prices = []
 
 patterns = [
     r"€\s*([0-9]+(?:[.,][0-9]{2})?)",
-    r"([0-9]+(?:[.,][0-9]{2})?)\s*€"
+    r"([0-9]+(?:[.,][0-9]{2})?)\s*€",
+    r"EUR\s*([0-9]+(?:[.,][0-9]{2})?)"
 ]
 
 
@@ -144,7 +155,7 @@ for pattern in patterns:
 if not prices:
 
     raise Exception(
-        "Nessun prezzo trovato. Controlla viagogo-debug.png"
+        "Nessun prezzo trovato. Scarica viagogo-page.html"
     )
 
 
