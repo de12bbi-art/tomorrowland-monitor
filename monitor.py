@@ -1,7 +1,7 @@
 import os
 import re
 import requests
-from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
 URL = "https://www.viagogo.it/Biglietti-Festivals/Festival-Internazionali/Tomorrowland-Biglietti/E-160250859?quantity=1"
 
@@ -16,39 +16,42 @@ def send_telegram(message):
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         json={
             "chat_id": CHAT_ID,
-            "text": message
+            "text": message,
         },
-        timeout=20
+        timeout=30,
     )
 
 
-headers = {
-    "User-Agent": (
-        "Mozilla/5.0"
-    )
-}
+with sync_playwright() as p:
 
-response = requests.get(URL, headers=headers, timeout=30)
+    browser = p.chromium.launch(headless=True)
 
-if response.status_code != 200:
-    raise Exception(f"HTTP {response.status_code}")
+    page = browser.new_page()
 
-html = response.text
+    page.goto(URL, wait_until="networkidle", timeout=120000)
+
+    text = page.locator("body").inner_text()
+
+    browser.close()
 
 prices = []
 
-# Cerca prezzi in euro nel codice sorgente
-matches = re.findall(r"€\s*([0-9]+(?:[.,][0-9]{2})?)", html)
+patterns = [
+    r"€\s*([0-9]+(?:[.,][0-9]{2})?)",
+    r"([0-9]+(?:[.,][0-9]{2})?)\s*€",
+]
 
-for m in matches:
-    try:
-        value = float(m.replace(".", "").replace(",", "."))
-        prices.append(value)
-    except:
-        pass
+for pattern in patterns:
+    for m in re.findall(pattern, text):
+        try:
+            value = float(m.replace(".", "").replace(",", "."))
+            if 50 < value < 10000:
+                prices.append(value)
+        except:
+            pass
 
 if not prices:
-    raise Exception("Nessun prezzo trovato")
+    raise Exception("Nessun prezzo trovato nemmeno con Playwright")
 
 lowest = min(prices)
 
@@ -57,6 +60,6 @@ print("Lowest:", lowest)
 if lowest <= THRESHOLD:
     send_telegram(
         f"🔥 Tomorrowland Weekend 1\n\n"
-        f"Prezzo minimo trovato: €{lowest:.2f}\n"
+        f"Prezzo minimo: €{lowest:.2f}\n"
         f"Soglia: €{THRESHOLD}"
     )
