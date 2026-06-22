@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 
 URL = "https://www.viagogo.it/Biglietti-Festivals/Festival-Internazionali/Tomorrowland-Biglietti/E-160250859?quantity=1"
 
-THRESHOLD = 500
+THRESHOLD = 700
 
 
 BOT_TOKEN = os.environ["TELEGRAM_TOKEN"]
