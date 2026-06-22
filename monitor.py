@@ -12,6 +12,8 @@ THRESHOLD = 700
 BOT_TOKEN = os.environ["TELEGRAM_TOKEN"]
 CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
+print("TOKEN presente:", bool(BOT_TOKEN))
+print("CHAT_ID:", CHAT_ID)
 
 def send_telegram(message):
     requests.post(
