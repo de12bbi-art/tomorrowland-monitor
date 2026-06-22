@@ -24,6 +24,8 @@ def send_telegram(message):
         },
         timeout=30
     )
+print("Telegram status:", r.status_code)
+print("Telegram response:", r.text)
 
 
 with sync_playwright() as p:
